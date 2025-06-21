@@ -160,7 +160,7 @@
                     <p>Select an image from the left to crop.</p>
                 </template>
                 <template x-if="!!currentImage">
-                    <img x-ref="img" :src="currentImage.url"  />
+                    <img loading="lazy" x-ref="img" :src="currentImage.url"  />
                 </template>
             </div>
         </div>
