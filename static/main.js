@@ -139,6 +139,9 @@ const cropperApp = () => ({
         this.$refs.img.onload = () => {
             this.initCropper();
         };
+
+        // Add beforeunload event listener to handle tab closing
+        window.addEventListener('beforeunload', this.handleBeforeUnload);
     },
     setAspectRatio(ratio) {
         this.lastAspectRatio = ratio;
@@ -186,6 +189,10 @@ const cropperApp = () => ({
             }),
         });
         await this.shutdown();
+    },
+    handleBeforeUnload() {
+        // Use Beacon API to send the shutdown request when the tab is closing
+        navigator.sendBeacon('/api/shutdown');
     },
     async shutdown() {
         await fetchJSON('/api/shutdown', {method: 'POST'});
