@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JavaScript Image Cropper</title>
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Menlo, Consolas, monospace;
+            margin: 0;
+            padding: 1rem;
+            background: #111;
+            color: #f9f9f9;
+        }
+
+        .button {
+            background: #398ce4;
+            color: white;
+            border: none;
+            padding: 0.5em 1em;
+            border-radius: 2em;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        *:has(.app) {
+            height: 100%;
+        }
+
+        .app {
+            height: 100%;
+            display: grid;
+            gap: 1rem;
+            grid-template-areas:
+                    "image-strip current-image operations"
+                    "image-strip controls operations";
+            grid-template-columns: 200px 1fr 200px;
+            grid-template-rows: 1fr 50px;
+        }
+
+        .image-strip {
+            grid-area: image-strip;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            gap: 0.5rem;
+        }
+
+        .image-strip img {
+            display: block;
+        }
+        .current-image {
+            grid-area: current-image;
+        }
+
+        .current-image-container img {
+            max-width: 100%;
+            max-height: calc(100vh - 100px - 2rem);
+            object-fit: contain;
+            display: block;
+        }
+
+        .controls {
+            grid-area: controls;
+            font-size: 0.7rem;
+        }
+
+        .operations {
+            grid-area: operations;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            overflow-y: auto;
+        }
+
+        .image-strip img {
+            width: 100%;
+            height: auto;
+        }
+
+        .aspect-ratios {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .operation img {
+            display: block;
+            width: 100%;
+            height: auto;
+            object-fit: cover;
+            aspect-ratio: var(--aspect-ratio);
+        }
+
+        .operation {
+            position: relative;
+        }
+        .operation-actions {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            display: flex;
+            transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+        }
+        .holding-alt .operation:hover .operation-actions {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .aspect-ratio-button.is-active {
+            background: #2a6bb8;
+        }
+
+        .input {
+            font-family: inherit;
+            font-size: inherit;
+            padding: 0.5em;
+            border: 1px solid #ccc;
+            color: inherit;
+            background-color: transparent;
+        }
+        .input:focus {
+            outline: none;
+            border-color: #398ce4;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <div
+            class="app"
+            x-data="cropperApp()"
+            @keypress.window="onHotkey"
+            @keydown.alt.window="holdingAlt = true"
+            @keyup.alt.window="holdingAlt = false"
+            :style="{'--viewport-height': viewport.height + 'px', '--viewport-width': viewport.width + 'px'}"
+            @resize.window="onResizeWindow"
+    >
+        <div class="image-strip">
+            <template x-for="(img, i) in images" :key="i">
+                <div @click="onThumbnailClicked(img)"><img :src="img.url" /></div>
+            </template>
+        </div>
+        <div class="current-image">
+            <div class="current-image-container">
+                <template x-if="!currentImage">
+                    <p>Select an image from the left to crop.</p>
+                </template>
+                <template x-if="!!currentImage">
+                    <img x-ref="img" :src="currentImage.url"  />
+                </template>
+            </div>
+        </div>
+        <div class="controls">
+            <div class="aspect-ratios">
+                <template x-for="ratio in aspectRatios" :key="ratio.label">
+                    <button
+                            :class="{'is-active': lastAspectRatio === ratio.value}"
+                            class="button aspect-ratio-button"
+                            @click="setAspectRatio(ratio.value)"
+                            x-text="ratio.label"
+                    ></button>
+                </template>
+                <input class="input" type="text" x-model="customAspectRatio" placeholder="x:y or x/y" @change="setCustomAspectRatio" />
+            </div>
+        </div>
+        <div class="operations" :class="{ 'holding-alt': holdingAlt }">
+            <template x-if="operations.length > 0">
+                <button class="button" @click="onSave">Save</button>
+            </template>
+            <template x-for="(operation, i) in operations" :key="i">
+                <div
+                        class="operation"
+                        :class="operation.type"
+                        :style="{
+                            '--aspect-ratio': operation.aspectRatio,
+                        }"
+                >
+                    <img :src="operation.image.url" />
+                    <div class="operation-actions">
+                        <button class="button" @click="onDeleteOperation(operation)">Delete</button>
+                    </div>
+                </div>
+            </template>
+
+        </div>
+    </div>
+</main>
+
+<script defer src="alpinejs@3.x.x.min.js"></script>
+<script src="cropper.js"></script>
+<script src="main.js"></script>
+</body>
+</html>

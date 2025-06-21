@@ -1,0 +1,55 @@
+body {
+    margin: 0;
+    padding: 0;
+    background: black;
+}
+
+.app {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    grid-template-areas: "lister cropper";
+}
+
+.lister {
+    grid-area: lister;
+}
+
+.cropper {
+    grid-area: cropper;
+}
+
+.image-thumbs {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.image-thumb__item {
+    opacity: 0.9;
+}
+
+.image-thumb__item:hover {
+    opacity: 1;
+}
+
+.image-thumb__item img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.focused-image {
+}
+.focused-image img,
+.focused-image .croppr-container {
+    margin: auto;
+}
+
+.focused-image img {
+    width: auto;
+    max-height: 100vh;
+}
