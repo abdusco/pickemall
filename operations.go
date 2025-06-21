@@ -84,15 +84,15 @@ type Cropper interface {
 	Crop(ctx context.Context, r io.Reader, w io.Writer, crop Crop) error
 }
 
-type OperationRunner struct {
+type OperationExecutor struct {
 	BaseDir   string
 	OutputDir string
 	Cropper   Cropper
 }
 
-func (r OperationRunner) Run(ctx context.Context, ops []Operation) error {
+func (r OperationExecutor) Exec(ctx context.Context, ops []Operation) error {
 	if len(ops) == 0 {
-		log.Ctx(ctx).Warn().Msg("no operations to run")
+		log.Ctx(ctx).Warn().Msg("no operations to execute")
 		return nil
 	}
 
@@ -100,10 +100,10 @@ func (r OperationRunner) Run(ctx context.Context, ops []Operation) error {
 		return fmt.Errorf("failed to create output directory %s: %w", r.OutputDir, err)
 	}
 	for _, op := range ops {
-		if err := r.run(ctx, op); err != nil {
+		if err := r.executeOperation(ctx, op); err != nil {
 			log.Ctx(ctx).Error().Err(err).
 				Interface("op", op).
-				Msg("failed to run operation")
+				Msg("failed to execute operation")
 			continue
 		}
 	}
@@ -111,7 +111,7 @@ func (r OperationRunner) Run(ctx context.Context, ops []Operation) error {
 	return nil
 }
 
-func (r OperationRunner) run(ctx context.Context, op Operation) error {
+func (r OperationExecutor) executeOperation(ctx context.Context, op Operation) error {
 	if op.Crop != nil {
 		log.Ctx(ctx).Info().Str("filename", op.Crop.Filename).Msg("cropping")
 		sourcePath := filepath.Join(r.BaseDir, op.Crop.Filename)

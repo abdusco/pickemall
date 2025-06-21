@@ -104,7 +104,7 @@ func (cmd *serveCmd) Run() error {
 		return c.JSON(response)
 	})
 
-	var runner = OperationRunner{
+	var executor = OperationExecutor{
 		BaseDir:   cmd.RootDir,
 		OutputDir: filepath.Join(cmd.RootDir, "output"),
 		Cropper:   NewImagingCropper(),
@@ -118,9 +118,9 @@ func (cmd *serveCmd) Run() error {
 			return err
 		}
 
-		if err := runner.Run(c.Context(), request.Operations); err != nil {
+		if err := executor.Exec(c.Context(), request.Operations); err != nil {
 			log.Ctx(c.Context()).Error().Err(err).
-				Msg("Failed to run operations")
+				Msg("Failed to exec operations")
 		}
 
 		return c.SendStatus(http.StatusNoContent)
