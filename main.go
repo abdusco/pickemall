@@ -218,8 +218,13 @@ func walkImages(rootPath string) ([]FileInfo, error) {
 					return fmt.Errorf("failed to get file info: %w", err)
 				}
 
+				relPath, err := filepath.Rel(rootPath, path)
+				if err != nil {
+					return fmt.Errorf("failed to get relative path: %w", err)
+				}
+
 				files = append(files, FileInfo{
-					Name:       d.Name(),
+					Name:       relPath,
 					IsDir:      d.IsDir(),
 					SizeBytes:  info.Size(),
 					ModifiedAt: info.ModTime(),
@@ -234,7 +239,7 @@ func walkImages(rootPath string) ([]FileInfo, error) {
 	for i := range files {
 		w, h, err := readJPEGDimensions(filepath.Join(rootPath, files[i].Name))
 		if err != nil {
-			log.Ctx(context.Background()).Error().Err(err).Str("file_name", files[i].Name).Msg("cannot read image dimensions")
+			log.Ctx(context.Background()).Error().Err(err).Str("filename", files[i].Name).Msg("cannot read image dimensions")
 			continue
 		}
 		files[i].Image = ImageInfo{
