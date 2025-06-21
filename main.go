@@ -45,6 +45,7 @@ func run() error {
 
 type serveCmd struct {
 	RootDir string `arg:"" help:"Root directory to serve files from"`
+	Debug   bool   `help:"Enable debug mode"`
 }
 
 //go:embed static
@@ -60,7 +61,11 @@ func (cmd *serveCmd) Run() error {
 		Immutable:             true,
 		DisableStartupMessage: true,
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			log.Ctx(c.Context()).Error().Err(err).Msg("Error in request")
+			log.Ctx(c.Context()).Error().
+				Err(err).
+				Str("path", c.Path()).
+				Str("method", c.Method()).
+				Msg("Request failed")
 			var fiberErr *fiber.Error
 			if errors.As(err, &fiberErr) {
 				return c.Status(fiberErr.Code).JSON(fiber.Map{"error": fiberErr.Message})
@@ -69,9 +74,11 @@ func (cmd *serveCmd) Run() error {
 		},
 	})
 
-	webapp.Static("/", "static")
-
 	filesRoot := http.Dir(cmd.RootDir)
+
+	webapp.Get("/favicon.ico", func(c *fiber.Ctx) error {
+		return c.SendStatus(http.StatusNoContent)
+	})
 
 	webapp.Get("/api/view", func(c *fiber.Ctx) error {
 		filePath := c.Query("file")
@@ -114,6 +121,17 @@ func (cmd *serveCmd) Run() error {
 		return c.SendStatus(http.StatusNoContent)
 	})
 
+	if cmd.Debug {
+		log.Info().Msg("Debug mode enabled, serving static files from 'static' directory")
+		webapp.Static("/", "static")
+	} else {
+		log.Info().Msg("Serving static files from embedded filesystem")
+		webapp.Use("/", filesystem.New(filesystem.Config{
+			Root:       http.FS(staticFS),
+			PathPrefix: "/static",
+		}))
+	}
+
 	// Set up the graceful shutdown in a separate goroutine
 	go func() {
 		<-ctx.Done() // Wait for interrupt signal (Ctrl+C)
@@ -130,9 +148,10 @@ func (cmd *serveCmd) Run() error {
 		}
 	}()
 
-	log.Info().Str("address", ":3001").Msg("Server started")
+	port := 3001
+	log.Info().Msgf("Server started at http://%s:%d", "localhost", port)
 
-	if err := webapp.Listen(":3001"); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	if err := webapp.Listen(":" + fmt.Sprint(port)); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("server error: %w", err)
 	}
 

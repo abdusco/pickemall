@@ -128,7 +128,6 @@ const cropperApp = () => ({
         const maxLength = 200;
         const {dataURL, aspectRatio} = this.cropper.thumbnail(maxLength);
         this.operations = [
-            ...this.operations,
             {
                 id: crypto.randomUUID(),
                 type: "crop",
@@ -136,19 +135,20 @@ const cropperApp = () => ({
                 image: this.currentImage,
                 aspectRatio,
             },
+            ...this.operations,
         ];
     },
     async onPickImage() {
         const aspectRatio = this.$refs.img.naturalWidth / this.$refs.img.naturalHeight;
 
         this.operations = [
-            ...this.operations,
             {
                 id: crypto.randomUUID(),
                 type: "pick",
                 image: this.currentImage,
                 aspectRatio,
             },
+            ...this.operations,
         ];
     },
     async init() {
