@@ -113,36 +113,45 @@ func (r OperationExecutor) Exec(ctx context.Context, ops []Operation) error {
 
 func (r OperationExecutor) executeOperation(ctx context.Context, op Operation) error {
 	if op.Crop != nil {
-		log.Ctx(ctx).Info().Str("filename", op.Crop.Filename).Msg("cropping")
-		sourcePath := filepath.Join(r.BaseDir, op.Crop.Filename)
-		f, err := os.Open(sourcePath)
-		if err != nil {
-			return fmt.Errorf("failed to open file %s: %w", sourcePath, err)
-		}
-		defer f.Close()
-		var b bytes.Buffer
-		if err := r.Cropper.Crop(ctx, f, &b, op.Crop.Crop); err != nil {
-			return err
-		}
-
-		newName := fmt.Sprintf("%s-%s.jpg", filepath.Base(op.Crop.Filename), op.Crop.Crop.ID())
-		croppedPath := filepath.Join(r.OutputDir, newName)
-		wf, err := os.Create(croppedPath)
-		if err != nil {
-			return fmt.Errorf("failed to create cropped file %s: %w", newName, err)
-		}
-		defer wf.Close()
-		if _, err := b.WriteTo(wf); err != nil {
-			return fmt.Errorf("failed to write cropped data to file %s: %w", newName, err)
-		}
-		return nil
+		return r.executeCrop(ctx, *op.Crop)
 	} else if op.Pick != nil {
-		log.Ctx(ctx).Info().Str("filename", op.Pick.Filename).Msg("picking")
-		sourcePath := filepath.Join(r.BaseDir, op.Pick.Filename)
-		savePath := filepath.Join(r.OutputDir, op.Pick.Filename)
-		if err := copyFile(sourcePath, savePath); err != nil {
-			return err
-		}
+		return r.executePick(ctx, *op.Pick)
+	}
+	return nil
+}
+
+func (r OperationExecutor) executeCrop(ctx context.Context, op CropOperation) error {
+	log.Ctx(ctx).Info().Str("filename", op.Filename).Msg("cropping")
+	sourcePath := filepath.Join(r.BaseDir, op.Filename)
+	f, err := os.Open(sourcePath)
+	if err != nil {
+		return fmt.Errorf("failed to open file %s: %w", sourcePath, err)
+	}
+	defer f.Close()
+	var b bytes.Buffer
+	if err := r.Cropper.Crop(ctx, f, &b, op.Crop); err != nil {
+		return err
+	}
+
+	newName := fmt.Sprintf("%s-%s.jpg", filepath.Base(op.Filename), op.Crop.ID())
+	croppedPath := filepath.Join(r.OutputDir, newName)
+	wf, err := os.Create(croppedPath)
+	if err != nil {
+		return fmt.Errorf("failed to create cropped file %s: %w", newName, err)
+	}
+	defer wf.Close()
+	if _, err := b.WriteTo(wf); err != nil {
+		return fmt.Errorf("failed to write cropped data to file %s: %w", newName, err)
+	}
+	return nil
+}
+
+func (r OperationExecutor) executePick(ctx context.Context, op PickOperation) error {
+	log.Ctx(ctx).Info().Str("filename", op.Filename).Msg("picking")
+	sourcePath := filepath.Join(r.BaseDir, op.Filename)
+	savePath := filepath.Join(r.OutputDir, op.Filename)
+	if err := copyFile(sourcePath, savePath); err != nil {
+		return fmt.Errorf("failed to pick file %s: %w", op.Filename, err)
 	}
 	return nil
 }
