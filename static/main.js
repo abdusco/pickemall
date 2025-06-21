@@ -1,31 +1,3 @@
-const images = Array.from({length: 20}, (_, i) => {
-    let aspectRatios = [2 / 3, 3 / 2];
-    let aspectRatio = aspectRatios[Math.floor(Math.random() * aspectRatios.length)];
-
-    const maxLength = 1500;
-    const maxThumbLength = 200;
-    let w, h;
-    let thumbW, thumbH;
-    if (aspectRatio > 1) {
-        w = maxLength;
-        h = Math.floor(w / aspectRatio);
-        thumbW = maxThumbLength;
-        thumbH = Math.floor(thumbW / aspectRatio);
-    } else {
-        h = maxLength;
-        w = Math.floor(h * aspectRatio);
-        thumbH = maxThumbLength;
-        thumbW = Math.floor(thumbH * aspectRatio);
-    }
-
-    const id = 100 + Math.floor(Math.random() * 100) + i;
-
-    return {
-        url: `https://unsplash.it/id/${id}/${w}/${h}`,
-        thumbnailURL: `https://unsplash.it/id/${id}/${thumbW}/${thumbH}`,
-    };
-});
-
 const cropperApp = () => ({
     cropData: null,
     images: [],
@@ -33,8 +5,9 @@ const cropperApp = () => ({
     holdingAlt: false,
     lastAspectRatio: null,
     customAspectRatio: "",
+    isFullScreen: false,
     aspectRatios: [
-        {label: "Freeform", value: null},
+        {label: "Free", value: null},
         {label: "10:16", value: 10 / 16},
         {label: "2:3", value: 2 / 3},
         {label: "3:4", value: 3 / 4},
@@ -43,12 +16,6 @@ const cropperApp = () => ({
         {label: "16:10", value: 16 / 10},
     ],
     operations: [],
-    onResizeWindow() {
-        this.viewport = {
-            width: window.innerWidth,
-            height: window.innerHeight,
-        };
-    },
     async setCustomAspectRatio() {
         const parts = this.customAspectRatio.split(/[:\/]/).map(Number);
         if (parts.length === 2) {
@@ -89,6 +56,7 @@ const cropperApp = () => ({
         this.$refs.img.onload = () => this.initCropper();
         this.currentImage = img;
     },
+    /** @param {Operation} operation */
     async onDeleteOperation(operation) {
         this.operations = this.operations.filter((op) => op.id !== operation.id);
     },
@@ -97,7 +65,8 @@ const cropperApp = () => ({
         this.cropper?.destroy(); // Destroy any existing cropper instance
         this.cropper = new Cropper(this.$refs.img, {
             aspectRatio: this.lastAspectRatio,
-            onReady: (cropper) => {},
+            onReady: (cropper) => {
+            },
             onCrop: (data) => {
                 this.cropData = {
                     x: +data.x.toFixed(3),
@@ -125,29 +94,39 @@ const cropperApp = () => ({
         await this.onThumbnailClicked(this.images[prevIndex]);
     },
     async onCropImage() {
+        if (!this.cropper?.hasCrop()) {
+            return;
+        }
         const maxLength = 200;
-        const {dataURL, aspectRatio} = this.cropper.thumbnail(maxLength);
-        this.operations = [
-            {
-                id: crypto.randomUUID(),
-                type: "crop",
-                crop: this.cropData,
-                image: this.currentImage,
-                aspectRatio,
+        const {dataURL} = this.cropper.thumbnail(maxLength);
+
+        const newOp = new Operation({
+            type: "crop",
+            crop: this.cropData,
+            image: {
+                ...this.currentImage,
+                url: dataURL,
             },
+        });
+
+        if (this.operations.find(op => op.equals(newOp))) {
+            return;
+        }
+        this.operations = [
+            newOp,
             ...this.operations,
         ];
     },
     async onPickImage() {
-        const aspectRatio = this.$refs.img.naturalWidth / this.$refs.img.naturalHeight;
-
+        let newOp = new Operation({
+            type: "pick",
+            image: this.currentImage,
+        });
+        if (this.operations.find(op => op.equals(newOp))) {
+            return;
+        }
         this.operations = [
-            {
-                id: crypto.randomUUID(),
-                type: "pick",
-                image: this.currentImage,
-                aspectRatio,
-            },
+            newOp,
             ...this.operations,
         ];
     },
@@ -155,7 +134,6 @@ const cropperApp = () => ({
         const res = await fetchJSON('/api/ls');
         this.images = res.files;
 
-        this.onResizeWindow();
         this.currentImage = this.images[0];
         await this.$nextTick();
         this.$refs.img.onload = () => {
@@ -196,7 +174,6 @@ const cropperApp = () => ({
         }
     },
     async onSave() {
-        debugger;
         const payload = this.operations.map(op => ({
             type: op.type,
             filename: op.image.name,
@@ -207,7 +184,12 @@ const cropperApp = () => ({
             body: JSON.stringify({
                 operations: payload,
             }),
-        })
+        });
+        await this.shutdown();
+    },
+    async shutdown() {
+        await fetchJSON('/api/shutdown', {method: 'POST'});
+        window.close();
     }
 });
 
@@ -234,4 +216,32 @@ async function fetchJSON(url, req = {}) {
     }
 
     return await res.json();
+}
+
+class Operation {
+    /**
+     * @param {Object} params
+     * @param {string} params.type - Type of operation (e.g., "crop", "pick")
+     * @param {Object} params.image - Image object with a URL
+     * @param {CropData} params.crop - Crop data with x, y, w, h properties
+     */
+    constructor({type, image, crop}) {
+        this.id = crypto.randomUUID();
+        this.type = type;
+        this.image = image;
+        this.crop = crop;
+    }
+
+    equals(other) {
+        if (!(other instanceof Operation)) {
+            return false;
+        }
+        if (this.id === other.id) {
+            return true;
+        }
+
+        return this.type === other.type &&
+            this.image.url === other.image.url &&
+            JSON.stringify(this.crop) === JSON.stringify(other.crop);
+    }
 }

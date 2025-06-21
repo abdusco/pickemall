@@ -42,7 +42,7 @@
                     "image-strip current-image operations"
                     "image-strip controls operations";
             grid-template-columns: 200px 1fr 200px;
-            grid-template-rows: 1fr 50px;
+            grid-template-rows: 1fr 0px;
         }
 
         .image-strip {
@@ -62,7 +62,7 @@
 
         .current-image-container img {
             max-width: 100%;
-            max-height: calc(100vh - 100px - 2rem);
+            max-height: calc(100vh - 2rem);
             object-fit: contain;
             display: block;
         }
@@ -83,6 +83,10 @@
         .image-strip img {
             width: 100%;
             height: auto;
+        }
+
+        .hidden {
+            display: none;
         }
 
         .aspect-ratios {
@@ -144,8 +148,6 @@
             @keypress.window="onHotkey"
             @keydown.alt.window="holdingAlt = true"
             @keyup.alt.window="holdingAlt = false"
-            :style="{'--viewport-height': viewport.height + 'px', '--viewport-width': viewport.width + 'px'}"
-            @resize.window="onResizeWindow"
     >
         <div class="image-strip">
             <template x-for="(img, i) in images" :key="i">
@@ -162,7 +164,7 @@
                 </template>
             </div>
         </div>
-        <div class="controls">
+        <div class="controls hidden">
             <div class="aspect-ratios">
                 <template x-for="ratio in aspectRatios" :key="ratio.label">
                     <button
@@ -179,13 +181,10 @@
             <template x-if="operations.length > 0">
                 <button class="button" @click="onSave">Save</button>
             </template>
-            <template x-for="(operation, i) in operations" :key="i">
+            <template x-for="operation in operations" :key="operation.id">
                 <div
                         class="operation"
                         :class="operation.type"
-                        :style="{
-                            '--aspect-ratio': operation.aspectRatio,
-                        }"
                 >
                     <img :src="operation.image.url" />
                     <div class="operation-actions">

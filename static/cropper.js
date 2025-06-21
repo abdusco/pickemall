@@ -361,8 +361,8 @@ class Cropper {
         let { x, y, width, height } = cropBox;
 
         // Ensure minimum size, respecting aspect ratio
-        let minWidth = 20;
-        let minHeight = 20;
+        let minWidth = 50;
+        let minHeight = 50;
         if (aspectRatio) {
             if (minWidth / aspectRatio > minHeight) {
                 minHeight = minWidth / aspectRatio;
@@ -442,6 +442,11 @@ class Cropper {
                 h: height / imgRect.height,
             });
         }
+    }
+
+    hasCrop() {
+        const { cropBox } = this._state;
+        return cropBox.width > 0 && cropBox.height > 0;
     }
 
     /**

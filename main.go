@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"embed"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -45,6 +44,7 @@ func run() error {
 
 type serveCmd struct {
 	RootDir string `arg:"" help:"Root directory to serve files from"`
+	Open    bool   `help:"Open the browser automatically when the server starts" default:"true"`
 	Debug   bool   `help:"Enable debug mode"`
 }
 
@@ -103,6 +103,11 @@ func (cmd *serveCmd) Run() error {
 		return c.JSON(response)
 	})
 
+	var runner = OperationRunner{
+		BaseDir:   cmd.RootDir,
+		OutputDir: filepath.Join(cmd.RootDir, "output"),
+		Cropper:   NewImagingCropper(),
+	}
 	webapp.Post("/api/save", func(c *fiber.Ctx) error {
 		var request struct {
 			Operations []Operation `json:"operations"`
@@ -112,17 +117,21 @@ func (cmd *serveCmd) Run() error {
 			return err
 		}
 
-		for _, op := range request.Operations {
-			if err := op.Run(c.Context()); err != nil {
-				return err
-			}
+		if err := runner.Run(c.Context(), request.Operations); err != nil {
+			log.Ctx(c.Context()).Error().Err(err).
+				Msg("Failed to run operations")
 		}
 
 		return c.SendStatus(http.StatusNoContent)
 	})
+	webapp.Post("/api/shutdown", func(c *fiber.Ctx) error {
+		log.Ctx(c.Context()).Info().Msg("Shutdown requested")
+		defer cancel()
+		return c.SendStatus(http.StatusNoContent)
+	})
 
 	if cmd.Debug {
-		log.Info().Msg("Debug mode enabled, serving static files from 'static' directory")
+		log.Info().Msg("Debug mode enabled, serving static files from './static' directory")
 		webapp.Static("/", "static")
 	} else {
 		log.Info().Msg("Serving static files from embedded filesystem")
@@ -149,80 +158,22 @@ func (cmd *serveCmd) Run() error {
 	}()
 
 	port := 3001
-	log.Info().Msgf("Server started at http://%s:%d", "localhost", port)
+	serveURL := fmt.Sprintf("http://localhost:%d", port)
+	log.Info().Msgf("Server started at %s", serveURL)
+
+	if cmd.Open {
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+			if err := openBrowser(serveURL); err != nil {
+				log.Error().Err(err).Msg("Failed to open browser")
+			}
+		}()
+	}
 
 	if err := webapp.Listen(":" + fmt.Sprint(port)); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("server error: %w", err)
 	}
 
-	return nil
-}
-
-type Operation struct {
-	Crop *CropOperation
-	Pick *PickOperation
-}
-
-func (o Operation) Run(ctx context.Context) error {
-	if o.Crop != nil {
-		return o.Crop.Run(ctx)
-	} else if o.Pick != nil {
-		return o.Pick.Run(ctx)
-	}
-	return fmt.Errorf("no valid operation found")
-}
-
-// unmarshal
-func (o *Operation) UnmarshalJSON(data []byte) error {
-	var op struct {
-		Type string `json:"type"`
-	}
-	if err := json.Unmarshal(data, &op); err != nil {
-		return fmt.Errorf("failed to unmarshal operation: %w", err)
-	}
-
-	switch op.Type {
-	case "crop":
-		var crop CropOperation
-		if err := json.Unmarshal(data, &crop); err != nil {
-			return fmt.Errorf("failed to unmarshal crop operation: %w", err)
-		}
-		o.Crop = &crop
-	case "pick":
-		var pick PickOperation
-		if err := json.Unmarshal(data, &pick); err != nil {
-			return fmt.Errorf("failed to unmarshal pick operation: %w", err)
-		}
-		o.Pick = &pick
-	default:
-		return fmt.Errorf("unknown operation %q", op.Type)
-	}
-	return nil
-}
-
-type Crop struct {
-	X      float64 `json:"x"`
-	Y      float64 `json:"y"`
-	Width  float64 `json:"w"`
-	Height float64 `json:"h"`
-}
-
-type CropOperation struct {
-	Filename string `json:"filename"`
-	Crop     Crop   `json:"crop"`
-}
-
-func (o CropOperation) Run(ctx context.Context) error {
-	log.Ctx(ctx).Info().Interface("op", o).Msg("Running crop operation")
-	return nil
-}
-
-type PickOperation struct {
-	Filename string `json:"filename"`
-}
-
-func (o PickOperation) Run(ctx context.Context) error {
-	log.Ctx(ctx).Info().Interface("op", o).Msg("Running pick operation")
 	return nil
 }
 
