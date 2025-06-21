@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -157,20 +158,27 @@ func (cmd *serveCmd) Run() error {
 		}
 	}()
 
-	port := 3001
-	serveURL := fmt.Sprintf("http://localhost:%d", port)
+	// Let the OS assign a random available port
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", 0))
+	if err != nil {
+		return fmt.Errorf("failed to listen: %w", err)
+	}
+
+	// Extract the actual port that was assigned by the OS
+	actualPort := listener.Addr().(*net.TCPAddr).Port
+	serveURL := fmt.Sprintf("http://localhost:%d", actualPort)
 	log.Info().Msgf("Server started at %s", serveURL)
 
 	if cmd.Open {
 		go func() {
-			time.Sleep(100 * time.Millisecond)
 			if err := openBrowser(serveURL); err != nil {
 				log.Error().Err(err).Msg("Failed to open browser")
 			}
 		}()
 	}
 
-	if err := webapp.Listen(":" + fmt.Sprint(port)); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	// Use the listener that was already created
+	if err := webapp.Listener(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("server error: %w", err)
 	}
 
