@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>pickemall</title>
     <style>
         *,
@@ -56,6 +56,7 @@
         .image-strip img {
             display: block;
         }
+
         .current-image {
             grid-area: current-image;
         }
@@ -105,6 +106,7 @@
         .operation {
             position: relative;
         }
+
         .operation-actions {
             position: absolute;
             inset: 0;
@@ -117,6 +119,7 @@
             display: flex;
             transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
         }
+
         .holding-alt .operation:hover .operation-actions {
             opacity: 1;
             visibility: visible;
@@ -134,9 +137,46 @@
             color: inherit;
             background-color: transparent;
         }
+
         .input:focus {
             outline: none;
             border-color: #398ce4;
+        }
+
+        .busy {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+            z-index: 1;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .spinner {
+            width: 10rem;
+            height: 10rem;
+            border: 1rem solid #FFF;
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
@@ -149,9 +189,12 @@
             @keydown.alt.window="holdingAlt = true"
             @keyup.alt.window="holdingAlt = false"
     >
+        <div class="busy" :class="{hidden: !busy}">
+            <div class="spinner"></div>
+        </div>
         <div class="image-strip">
             <template x-for="(img, i) in images" :key="i">
-                <div @click="onThumbnailClicked(img)"><img :src="img.url" /></div>
+                <div @click="onThumbnailClicked(img)"><img :src="img.url"/></div>
             </template>
         </div>
         <div class="current-image">
@@ -160,7 +203,7 @@
                     <p>Select an image from the left to crop.</p>
                 </template>
                 <template x-if="!!currentImage">
-                    <img loading="lazy" x-ref="img" :src="currentImage.url"  />
+                    <img loading="lazy" x-ref="img" :src="currentImage.url"/>
                 </template>
             </div>
         </div>
@@ -174,7 +217,8 @@
                             x-text="ratio.label"
                     ></button>
                 </template>
-                <input class="input" type="text" x-model="customAspectRatio" placeholder="x:y or x/y" @change="setCustomAspectRatio" />
+                <input class="input" type="text" x-model="customAspectRatio" placeholder="x:y or x/y"
+                       @change="setCustomAspectRatio"/>
             </div>
         </div>
         <div class="operations" :class="{ 'holding-alt': holdingAlt }">
@@ -186,13 +230,12 @@
                         class="operation"
                         :class="operation.type"
                 >
-                    <img :src="operation.image.url" />
+                    <img :src="operation.image.url"/>
                     <div class="operation-actions">
                         <button class="button" @click="onDeleteOperation(operation)">Delete</button>
                     </div>
                 </div>
             </template>
-
         </div>
     </div>
 </main>

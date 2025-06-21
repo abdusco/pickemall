@@ -6,6 +6,7 @@ const cropperApp = () => ({
     lastAspectRatio: null,
     customAspectRatio: "",
     isFullScreen: false,
+    busy: false,
     aspectRatios: [
         {label: "Free", value: null},
         {label: "10:16", value: 10 / 16},
@@ -176,19 +177,33 @@ const cropperApp = () => ({
             this.cropData = null;
         }
     },
+    /* * @param {(): Promise} callback */
+    async spin(callback) {
+        this.busy = true;
+        try {
+            await callback();
+        } catch (error) {
+            console.error("Error during operation:", error);
+            alert("An error occurred: " + error.message);
+        } finally {
+            this.busy = false;
+        }
+    },
     async onSave() {
         const payload = this.operations.map(op => ({
             type: op.type,
             filename: op.image.name,
             crop: op.crop,
         }));
-        await fetchJSON('/api/save', {
-            method: 'POST',
-            body: JSON.stringify({
-                operations: payload,
-            }),
-        });
-        await this.shutdown();
+        await this.spin(async () => {
+            await fetchJSON('/api/save', {
+                method: 'POST',
+                body: JSON.stringify({
+                    operations: payload,
+                }),
+            });
+            await this.shutdown();
+        })
     },
     handleBeforeUnload() {
         // Use Beacon API to send the shutdown request when the tab is closing

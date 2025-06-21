@@ -126,6 +126,11 @@ func (cmd *serveCmd) Run() error {
 		return c.SendStatus(http.StatusNoContent)
 	})
 	webapp.Post("/api/shutdown", func(c *fiber.Ctx) error {
+		if cmd.Debug {
+			log.Ctx(c.Context()).Info().
+				Msg("Shutdown endpoint called in debug mode, not performing shutdown")
+			return c.SendStatus(http.StatusNotImplemented)
+		}
 		log.Ctx(c.Context()).Info().Msg("Shutdown requested")
 		defer cancel()
 		return c.SendStatus(http.StatusNoContent)
