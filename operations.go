@@ -13,6 +13,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+type Operations = []Operation
+
 type Operation struct {
 	Crop *CropOperation
 	Pick *PickOperation

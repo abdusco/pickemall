@@ -1,11 +1,83 @@
 package main
 
 import (
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/rs/zerolog/log"
 )
+
+type ImageInfo struct {
+	Width  int `json:"width"`
+	Height int `json:"height"`
+}
+
+type FileInfo struct {
+	Name       string    `json:"name"`
+	IsDir      bool      `json:"is_dir"`
+	SizeBytes  int64     `json:"size_bytes"`
+	ModifiedAt time.Time `json:"modified_at"`
+	URL        string    `json:"url"`
+	Image      ImageInfo `json:"image"`
+}
+
+func walkImages(rootPath string) ([]FileInfo, error) {
+	extensions := []string{".jpg", ".jpeg"}
+	var files []FileInfo
+
+	if err := filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+
+		for _, ext := range extensions {
+			if filepath.Ext(path) == ext {
+				info, err := d.Info()
+				if err != nil {
+					return fmt.Errorf("failed to get file info: %w", err)
+				}
+
+				relPath, err := filepath.Rel(rootPath, path)
+				if err != nil {
+					return fmt.Errorf("failed to get relative path: %w", err)
+				}
+
+				files = append(files, FileInfo{
+					Name:       relPath,
+					IsDir:      d.IsDir(),
+					SizeBytes:  info.Size(),
+					ModifiedAt: info.ModTime(),
+				})
+			}
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	for i := range files {
+		w, h, err := readJPEGDimensions(filepath.Join(rootPath, files[i].Name))
+		if err != nil {
+			log.Ctx(context.Background()).Error().Err(err).Str("filename", files[i].Name).Msg("cannot read image dimensions")
+			continue
+		}
+		files[i].Image = ImageInfo{
+			Width:  w,
+			Height: h,
+		}
+	}
+
+	return files, nil
+}
 
 func readJPEGDimensions(filePath string) (width, height int, err error) {
 	file, err := os.Open(filePath)
