@@ -18,11 +18,15 @@ func main() {
 	}
 }
 
+var version string = "0.0.0"
+
 func run() error {
 	var args cliArgs
 	cliCtx := kong.Parse(
 		&args,
 		kong.Name("pickemall"),
+		kong.Description("Image culler and cropper"),
+		kong.Vars{"version": version},
 		kong.UsageOnError(),
 	)
 	if err := cliCtx.Run(); err != nil {
@@ -95,7 +99,8 @@ func (cmd *serveCmd) Run() error {
 }
 
 type cliArgs struct {
-	Serve serveCmd `cmd:"" default:"withargs"`
+	Version kong.VersionFlag `help:"Show version information"`
+	Serve   serveCmd         `cmd:"" default:"withargs"`
 }
 
 func printJSONL[T any](data []T) {
