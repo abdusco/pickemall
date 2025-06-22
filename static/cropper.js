@@ -582,17 +582,15 @@ class Cropper {
             let newHeight;
 
             if (ratio > imageAspectRatio) {
-                newWidth = imgRect.width;
+                newWidth = Math.floor(imgRect.width * 0.8);
                 newHeight = newWidth / ratio;
             } else {
-                newHeight = imgRect.height;
+                newHeight = Math.floor(imgRect.height * 0.8);
                 newWidth = newHeight * ratio;
             }
 
             cropBox.width = newWidth;
             cropBox.height = newHeight;
-            cropBox.x = (imgRect.width - newWidth) / 2;
-            cropBox.y = (imgRect.height - newHeight) / 2;
 
             this._constrainCropBox();
             this._updateUI();

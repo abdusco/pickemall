@@ -1,20 +1,22 @@
+const ASPECT_RATIOS = [
+    {label: "Freeform", value: null},
+    {label: "10:16", value: 10 / 16},
+    {label: "2:3", value: 2 / 3},
+    {label: "3:4", value: 3 / 4},
+    {label: "4:5", value: 4 / 5},
+    {label: "1:1", value: 1},
+    {label: "16:10", value: 16 / 10},
+];
+
 const cropperApp = () => ({
     cropData: null,
     images: [],
     currentImage: null,
     holdingAlt: false,
-    lastAspectRatio: null,
+    lastAspectRatio: 2/3,
     customAspectRatio: "",
     busy: false,
-    aspectRatios: [
-        {label: "Free", value: null},
-        {label: "10:16", value: 10 / 16},
-        {label: "2:3", value: 2 / 3},
-        {label: "3:4", value: 3 / 4},
-        {label: "4:5", value: 4 / 5},
-        {label: "1:1", value: 1},
-        {label: "16:10", value: 16 / 10},
-    ],
+    aspectRatios: ASPECT_RATIOS,
     operations: [],
     async setCustomAspectRatio() {
         const parts = this.customAspectRatio.split(/[:\/]/).map(Number);
@@ -157,34 +159,11 @@ const cropperApp = () => ({
             this.cropper.setAspectRatio(ratio);
         }
     },
-    cropImage() {
-        if (this.cropper) {
-            const dataUrl = this.cropper.crop();
-            this.$refs.croppedResult.src = dataUrl;
-            this.$refs.croppedResult.style.display = "block";
-        }
-    },
-    handleFileUpload(event) {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                this.$refs.img.src = e.target.result;
-                // Initialize cropper after image is loaded
-                this.$refs.img.onload = () => {
-                    this.init();
-                };
-            };
-            reader.readAsDataURL(file);
-        }
-    },
-    resetCropper() {
-        if (this.cropper) {
-            this.cropper.destroy();
-            this.cropData = null;
-        }
-    },
-    /* * @param {(): Promise} callback */
+    /**
+     * @typedef T
+     * @param {() => Promise<T>} callback
+     * @returns {Promise<T>}
+     * */
     async spin(callback) {
         this.busy = true;
         try {
@@ -212,7 +191,7 @@ const cropperApp = () => ({
             await this.shutdown();
         })
     },
-    handleBeforeUnload() {
+    async handleBeforeUnload() {
         // Use Beacon API to send the shutdown request when the tab is closing
         navigator.sendBeacon('/api/shutdown');
     },
