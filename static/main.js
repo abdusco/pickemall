@@ -51,6 +51,7 @@ const cropperApp = () => ({
             'Alt+KeyZ': () => this.onUndoLastOperation(),
 
             'Control+Enter': () => this.onSave(),
+            'Alt+Enter': () => this.onSave(),
             'Meta+Enter': () => this.onSave(),
         };
 
