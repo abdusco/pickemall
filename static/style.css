@@ -57,6 +57,7 @@ body {
 
 .current-image {
     grid-area: current-image;
+    line-height: 0;
 }
 
 *:has(.current-image img) {
