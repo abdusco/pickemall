@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -40,7 +41,7 @@ func walkImages(rootPath string) ([]FileInfo, error) {
 		}
 
 		for _, ext := range extensions {
-			if filepath.Ext(path) == ext {
+			if strings.ToLower(filepath.Ext(path)) == ext {
 				info, err := d.Info()
 				if err != nil {
 					return fmt.Errorf("failed to get file info: %w", err)
