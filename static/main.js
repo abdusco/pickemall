@@ -5,7 +5,6 @@ const cropperApp = () => ({
     holdingAlt: false,
     lastAspectRatio: null,
     customAspectRatio: "",
-    isFullScreen: false,
     busy: false,
     aspectRatios: [
         {label: "Free", value: null},
@@ -41,6 +40,7 @@ const cropperApp = () => ({
         }
         if (e.altKey) {
             const ops = {
+                KeyF: () => this.onEnterFullScreen(),
                 KeyC: () => this.onCropImage(),
                 KeyP: () => this.onPickImage(),
                 KeyJ: () => this.onNextImage(),
@@ -49,8 +49,15 @@ const cropperApp = () => ({
             const fn = ops[e.code];
             if (fn) {
                 e.preventDefault();
-                fn();
+                await fn();
             }
+        }
+    },
+    async onEnterFullScreen() {
+        if (document.fullscreenElement) {
+            await document.exitFullscreen();
+        } else {
+            await document.documentElement.requestFullscreen();
         }
     },
     async onThumbnailClicked(img) {
