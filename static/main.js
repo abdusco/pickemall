@@ -143,7 +143,7 @@ const cropperApp = () => ({
         if (!this.cropper?.hasCrop()) {
             return;
         }
-        const maxLength = 300;
+        const maxLength = 600;
         const {dataURL} = this.cropper.thumbnail(maxLength);
 
         const newOp = new Operation({
