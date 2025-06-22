@@ -64,6 +64,7 @@
                 <div
                         class="operation"
                         :class="operation.type"
+                        @click="onOperationClicked(operation)"
                 >
                     <img :src="operation.image.url"/>
                     <div class="operation-actions">

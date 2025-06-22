@@ -187,3 +187,8 @@ body {
         transform: rotate(360deg);
     }
 }
+
+.overlay {
+    background: rgba(255, 0, 0, 0.1);
+    border: none !important;
+}

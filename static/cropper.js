@@ -424,6 +424,51 @@ class Cropper {
                 0% ${y}px, ${x}px ${y}px, ${x}px ${y + height}px, ${x + width}px ${y + height}px, 
                 ${x + width}px ${y}px, 0 ${y}px
             )`;
+
+        // Update all overlays when cropbox changes
+        this._updateOverlays();
+    }
+
+    /**
+     * Updates the position and size of all overlays based on the current cropbox dimensions
+     * @private
+     */
+    _updateOverlays() {
+        if (!this.selection) return;
+
+        const overlays = this.selection.querySelectorAll('.cropper-area-overlay');
+        if (!overlays.length) return;
+
+        const { width: cropBoxWidth, height: cropBoxHeight } = this._state.cropBox;
+
+        overlays.forEach(overlay => {
+            const aspectRatio = parseFloat(overlay.dataset.aspectRatio);
+            if (!aspectRatio) return;
+
+            const cropBoxAspectRatio = cropBoxWidth / cropBoxHeight;
+
+            let overlayWidth, overlayHeight, overlayLeft, overlayTop;
+
+            if (aspectRatio > cropBoxAspectRatio) {
+                // Width-limited: overlay will touch left and right edges
+                overlayWidth = cropBoxWidth;
+                overlayHeight = cropBoxWidth / aspectRatio;
+                overlayLeft = 0;
+                overlayTop = (cropBoxHeight - overlayHeight) / 2;
+            } else {
+                // Height-limited: overlay will touch top and bottom edges
+                overlayHeight = cropBoxHeight;
+                overlayWidth = cropBoxHeight * aspectRatio;
+                overlayTop = 0;
+                overlayLeft = (cropBoxWidth - overlayWidth) / 2;
+            }
+
+            // Apply calculated dimensions and position
+            overlay.style.width = `${overlayWidth}px`;
+            overlay.style.height = `${overlayHeight}px`;
+            overlay.style.left = `${overlayLeft}px`;
+            overlay.style.top = `${overlayTop}px`;
+        });
     }
 
     /**
@@ -568,6 +613,74 @@ class Cropper {
     }
 
     /**
+     * Adds a rectangular overlay inside the cropbox with the specified aspect ratio.
+     * The overlay will extend to the edges of the cropbox, maintaining the given aspect ratio.
+     * @param {Object} options - Configuration options for the overlay
+     * @param {number} options.aspectRatio - The desired aspect ratio for the overlay rectangle
+     * @param {string} [options.className] - Optional CSS class to apply to the overlay
+     * @returns {HTMLElement} The created overlay element
+     */
+    addOverlay({ aspectRatio, className = '' }) {
+        if (!this.wrapper || !this.selection || !this.hasCrop()) {
+            console.warn("Cannot add overlay: Cropper is not initialized or has no crop area");
+            return null;
+        }
+
+        // Create overlay element
+        const overlay = document.createElement('div');
+        overlay.className = `cropper-area-overlay ${className}`.trim();
+
+        // Calculate overlay dimensions based on aspect ratio
+        const { width: cropBoxWidth, height: cropBoxHeight } = this._state.cropBox;
+        const cropBoxAspectRatio = cropBoxWidth / cropBoxHeight;
+
+        let overlayWidth, overlayHeight, overlayLeft, overlayTop;
+
+        if (aspectRatio > cropBoxAspectRatio) {
+            // Width-limited: overlay will touch left and right edges
+            overlayWidth = cropBoxWidth;
+            overlayHeight = cropBoxWidth / aspectRatio;
+            overlayLeft = 0;
+            overlayTop = (cropBoxHeight - overlayHeight) / 2;
+        } else {
+            // Height-limited: overlay will touch top and bottom edges
+            overlayHeight = cropBoxHeight;
+            overlayWidth = cropBoxHeight * aspectRatio;
+            overlayTop = 0;
+            overlayLeft = (cropBoxWidth - overlayWidth) / 2;
+        }
+
+        // Apply calculated dimensions and position
+        overlay.style.width = `${overlayWidth}px`;
+        overlay.style.height = `${overlayHeight}px`;
+        overlay.style.left = `${overlayLeft}px`;
+        overlay.style.top = `${overlayTop}px`;
+
+        // Store aspect ratio as data attribute for potential updates
+        overlay.dataset.aspectRatio = aspectRatio;
+
+        // Add the overlay to the selection area
+        this.selection.appendChild(overlay);
+
+        return overlay;
+    }
+
+    /**
+     * Removes all overlays from the cropbox.
+     */
+    removeOverlays() {
+        if (!this.selection) return;
+
+        // Find all overlay elements within the selection
+        const overlays = this.selection.querySelectorAll('.cropper-area-overlay');
+
+        // Remove each overlay
+        overlays.forEach(overlay => {
+            overlay.remove();
+        });
+    }
+
+    /**
      * Changes the aspect ratio of the crop box.
      * @param {number|null} ratio The new aspect ratio, or null for freeform.
      */
@@ -674,6 +787,14 @@ class Cropper {
                 .cropper-handle-s { bottom: -5px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
                 .cropper-handle-w { top: 50%; left: -5px; transform: translateY(-50%); cursor: ew-resize; }
                 .cropper-handle-e { top: 50%; right: -5px; transform: translateY(-50%); cursor: ew-resize; }
+                
+                /* Overlay styles */
+                .cropper-area-overlay {
+                    position: absolute;
+                    border: 2px dashed rgba(255, 255, 255, 0.9);
+                    box-sizing: border-box;
+                    pointer-events: none;
+                }
             `;
         const style = document.createElement("style");
         style.id = "cropper-styles";

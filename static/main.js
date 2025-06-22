@@ -19,6 +19,7 @@ const cropperApp = () => ({
     aspectRatios: ASPECT_RATIOS,
     operations: [],
     isFullScreen: false,
+    hasOverlay: false,
     async setCustomAspectRatio() {
         const parts = this.customAspectRatio.split(/[:\/]/).map(Number);
         if (parts.length === 2) {
@@ -44,6 +45,7 @@ const cropperApp = () => ({
             'Alt+KeyF': () => this.onEnterFullScreen(),
             'Alt+KeyC': () => this.onCropImage(),
             'Alt+KeyP': () => this.onPickImage(),
+            'Alt+KeyO': () => this.onToggleOverlay(),
             'Alt+KeyJ': () => this.onNextImage(),
             'Alt+KeyK': () => this.onPreviousImage(),
             'Alt+KeyZ': () => this.onUndoLastOperation(),
@@ -68,6 +70,19 @@ const cropperApp = () => ({
         // Execute the callback if it exists in the map
         await run(hotkeyMap[combo]);
     },
+    async onToggleOverlay() {
+        if (!this.cropper) {
+            return;
+        }
+
+        if (this.hasOverlay) {
+            this.cropper.removeOverlays();
+            this.hasOverlay = false;
+        } else {
+            this.cropper.addOverlay({aspectRatio: 9 / 16, className: 'overlay'});
+            this.hasOverlay = true;
+        }
+    },
     async onUndoLastOperation() {
         this.operations.shift();
     },
@@ -84,6 +99,7 @@ const cropperApp = () => ({
         this.$refs.img.onload = () => this.initCropper();
         this.currentImage = img;
         document.querySelector(`[data-img-id="${img.id}"]`)?.scrollIntoView();
+        this.hasOverlay = false;
     },
     /** @param {Operation} operation */
     async onDeleteOperation(operation) {
@@ -145,6 +161,10 @@ const cropperApp = () => ({
             newOp,
             ...this.operations,
         ];
+    },
+    async onOperationClicked(op) {
+        const img = op.image;
+        await this.onThumbnailClicked(img);
     },
     async onPickImage() {
         let newOp = new Operation({
@@ -249,7 +269,7 @@ class Operation {
     /**
      * @param {Object} params
      * @param {string} params.type - Type of operation (e.g., "crop", "pick")
-     * @param {Object} params.image - Image object with a URL
+     * @param {ImageInfo} params.image - Image object with a URL
      * @param {CropData} params.crop - Crop data with x, y, w, h properties
      */
     constructor({type, image, crop}) {
