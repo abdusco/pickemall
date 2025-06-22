@@ -1,8 +1,8 @@
+![logo](./docs/logo.svg)
+
 # pickemall
 
-**pickemall** is a simple and efficient web-based image cropping and selection tool. 
-It allows users to browse images in a specified directory, interactively crop images with customizable aspect ratios, pick images as-is, and save the results to an output directory. 
-The project is implemented with a Go backend serving HTTP APIs and an embedded frontend built using Alpine.js and a dependency-free JavaScript cropper component.
+**pickemall** is a simple web-based image culling and cropping tool. 
 
 ---
 
