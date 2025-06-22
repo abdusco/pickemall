@@ -216,6 +216,9 @@ const cropperApp = () => ({
         }
     },
     async onSave() {
+        if (this.operations.length === 0) {
+            return;
+        }
         const payload = this.operations.map(op => ({
             type: op.type,
             filename: op.image.name,
@@ -247,23 +250,28 @@ const cropperApp = () => ({
  * @param {RequestInfo} req
  * */
 async function fetchJSON(url, req = {}) {
-    const res = await fetch(url, {
-        method: req.method ?? 'GET',
-        headers: {
-            'content-type': 'application/json',
-            ...req.headers ?? {},
-        },
-        ...req,
-    });
-    if (!res.ok) {
-        throw new Error(await res.text());
-    }
+    try {
+        const res = await fetch(url, {
+            method: req.method ?? 'GET',
+            headers: {
+                'content-type': 'application/json',
+                ...req.headers ?? {},
+            },
+            ...req,
+        });
+        if (!res.ok) {
+            console.error('request failed', await res.text());
+            return
+        }
 
-    if (!res.headers.get('content-type')?.includes('application/json')) {
-        return
-    }
+        if (!res.headers.get('content-type')?.includes('application/json')) {
+            return
+        }
 
-    return await res.json();
+        return await res.json();
+    } catch (e) {
+        console.error('fetch error', e);
+    }
 }
 
 class Operation {
