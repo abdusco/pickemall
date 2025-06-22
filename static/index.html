@@ -22,7 +22,7 @@
         </div>
         <div class="image-strip">
             <template x-for="(img, i) in images" :key="i">
-                <div @click="onThumbnailClicked(img)"><img :src="img.url"/></div>
+                <div :data-img-id="img.id" @click="onThumbnailClicked(img)"><img :src="img.url"/></div>
             </template>
         </div>
         <div class="current-image"

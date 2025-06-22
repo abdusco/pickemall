@@ -83,6 +83,7 @@ const cropperApp = () => ({
     async onThumbnailClicked(img) {
         this.$refs.img.onload = () => this.initCropper();
         this.currentImage = img;
+        document.querySelector(`[data-img-id="${img.id}"]`)?.scrollIntoView();
     },
     /** @param {Operation} operation */
     async onDeleteOperation(operation) {
@@ -283,6 +284,7 @@ class ImageFile {
      * @param {ImageInfo} params.image - Image dimensions (width, height)
      */
     constructor({name, url, image}) {
+        this.id = crypto.randomUUID();
         this.name = name;
         this.url = url;
         this.image = image; // {width, height}
