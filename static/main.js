@@ -27,33 +27,48 @@ const cropperApp = () => ({
             }
         }
     },
+    /** @param {KeyboardEvent} e */
     async onHotkey(e) {
         if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
             return;
         }
-        if (+e.key) {
-            const ratio = this.aspectRatios.find((r, i) => i === +e.key);
-            if (ratio) {
-                e.preventDefault();
-                this.setAspectRatio(ratio.value);
-            } else {
-                this.setAspectRatio(null); // Reset to freeform if no valid ratio
-            }
+
+        const run = async (fn) => {
+            e.preventDefault();
+            return fn?.();
+        };
+
+        // NOTE: modifiers should be sorted alphabetically.
+        const hotkeyMap = {
+            'Alt+KeyF': () => this.onEnterFullScreen(),
+            'Alt+KeyC': () => this.onCropImage(),
+            'Alt+KeyP': () => this.onPickImage(),
+            'Alt+KeyJ': () => this.onNextImage(),
+            'Alt+KeyK': () => this.onPreviousImage(),
+            'Alt+KeyZ': () => this.onUndoLastOperation(),
+
+            'Control+Enter': () => this.onSave(),
+            'Meta+Enter': () => this.onSave(),
+        };
+
+        // Handle digit keys for aspect ratios (no modifiers)
+        if (e.code.startsWith('Digit')) {
+            const i = +e.key;
+            return run(() => this.setAspectRatio(ASPECT_RATIOS[i].value || null));
         }
-        if (e.altKey) {
-            const ops = {
-                KeyF: () => this.onEnterFullScreen(),
-                KeyC: () => this.onCropImage(),
-                KeyP: () => this.onPickImage(),
-                KeyJ: () => this.onNextImage(),
-                KeyK: () => this.onPreviousImage(),
-            };
-            const fn = ops[e.code];
-            if (fn) {
-                e.preventDefault();
-                await fn();
-            }
-        }
+
+        let combo = '';
+        if (e.altKey) combo += 'Alt+';
+        if (e.ctrlKey) combo += 'Control+';
+        if (e.metaKey) combo += 'Meta+';
+        if (e.shiftKey) combo += 'Shift+';
+        combo += e.code;
+
+        // Execute the callback if it exists in the map
+        await run(hotkeyMap[combo]);
+    },
+    async onUndoLastOperation() {
+        this.operations.shift();
     },
     async onEnterFullScreen() {
         if (document.fullscreenElement) {
