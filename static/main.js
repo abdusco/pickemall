@@ -13,11 +13,12 @@ const cropperApp = () => ({
     images: [],
     currentImage: null,
     holdingAlt: false,
-    lastAspectRatio: 2/3,
+    lastAspectRatio: 2 / 3,
     customAspectRatio: "",
     busy: false,
     aspectRatios: ASPECT_RATIOS,
     operations: [],
+    isFullScreen: false,
     async setCustomAspectRatio() {
         const parts = this.customAspectRatio.split(/[:\/]/).map(Number);
         if (parts.length === 2) {
@@ -73,8 +74,10 @@ const cropperApp = () => ({
     async onEnterFullScreen() {
         if (document.fullscreenElement) {
             await document.exitFullscreen();
+            this.isFullScreen = false;
         } else {
             await document.documentElement.requestFullscreen();
+            this.isFullScreen = true;
         }
     },
     async onThumbnailClicked(img) {
@@ -122,7 +125,7 @@ const cropperApp = () => ({
         if (!this.cropper?.hasCrop()) {
             return;
         }
-        const maxLength = 200;
+        const maxLength = 300;
         const {dataURL} = this.cropper.thumbnail(maxLength);
 
         const newOp = new Operation({
@@ -157,7 +160,7 @@ const cropperApp = () => ({
     },
     async init() {
         const res = await fetchJSON('/api/ls');
-        this.images = res.files;
+        this.images = res.files.map(f => new ImageFile(f));
 
         this.currentImage = this.images[0];
         await this.$nextTick();
@@ -266,5 +269,27 @@ class Operation {
         return this.type === other.type &&
             this.image.url === other.image.url &&
             JSON.stringify(this.crop) === JSON.stringify(other.crop);
+    }
+}
+
+/**
+ * @typedef {{width: number; height: number}} ImageInfo
+ * */
+class ImageFile {
+    /**
+     * @param {Object} params
+     * @param {string} params.name - Name of the image file
+     * @param {string} params.url - URL to access the image
+     * @param {ImageInfo} params.image - Image dimensions (width, height)
+     */
+    constructor({name, url, image}) {
+        this.name = name;
+        this.url = url;
+        this.image = image; // {width, height}
+        this.aspectRatio = image.width / image.height;
+    }
+
+    get orientation() {
+        return this.aspectRatio > 1 ? 'landscape' : 'portrait';
     }
 }

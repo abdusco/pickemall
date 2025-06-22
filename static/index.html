@@ -10,10 +10,12 @@
 <main>
     <div
             class="app"
+            :class="{ 'is-fullscreen': isFullScreen }"
             x-data="cropperApp()"
             @keypress.window="onHotkey"
             @keydown.alt.window="holdingAlt = true"
             @keyup.alt.window="holdingAlt = false"
+            @fullscreenchange.window="isFullScreen = !!document.fullscreenElement"
     >
         <div class="busy" :class="{hidden: !busy}">
             <div class="spinner"></div>
@@ -23,7 +25,14 @@
                 <div @click="onThumbnailClicked(img)"><img :src="img.url"/></div>
             </template>
         </div>
-        <div class="current-image">
+        <div class="current-image"
+             :style="{
+                '--aspect-ratio': currentImage?.aspectRatio,
+             }"
+             :class="{
+                'is-portrait': currentImage?.orientation === 'portrait',
+                'is-landscape': currentImage?.orientation === 'landscape',
+             }">
             <div class="current-image-container">
                 <template x-if="!currentImage">
                     <p>Select an image from the left to crop.</p>
