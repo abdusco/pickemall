@@ -694,11 +694,16 @@ class Cropper {
             let newWidth;
             let newHeight;
 
+             debugger;
             if (ratio > imageAspectRatio) {
-                newWidth = Math.floor(imgRect.width * 0.8);
+                const touchingEdges = Math.abs(imgRect.width - cropBox.width) < 1;
+                const atLeast = Math.floor(imgRect.width * 0.8);
+                newWidth = touchingEdges ? imgRect.width : atLeast;
                 newHeight = newWidth / ratio;
             } else {
-                newHeight = Math.floor(imgRect.height * 0.8);
+                const touchingEdges = Math.abs(imgRect.height - cropBox.height) < 1;
+                const atLeast = Math.floor(imgRect.height * 0.8);
+                newHeight = touchingEdges ? imgRect.height : atLeast;
                 newWidth = newHeight * ratio;
             }
 
