@@ -38,6 +38,12 @@
                     <p>Select an image from the left to crop.</p>
                 </template>
                 <template x-if="!!currentImage">
+                    <div class="current-image-meta">
+                        <p class="name" x-text="currentImage.name"></p>
+                        <p class="resolution" x-text="currentImage.resolution"></p>
+                    </div>
+                </template>
+                <template x-if="!!currentImage">
                     <img loading="lazy" x-ref="img" :src="currentImage.url"/>
                 </template>
             </div>

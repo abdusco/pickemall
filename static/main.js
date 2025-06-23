@@ -320,6 +320,10 @@ class ImageFile {
         this.aspectRatio = image.width / image.height;
     }
 
+    get resolution() {
+        return `${this.image.width}x${this.image.height}`;
+    }
+
     get orientation() {
         return this.aspectRatio > 1 ? 'landscape' : 'portrait';
     }

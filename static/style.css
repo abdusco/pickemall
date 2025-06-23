@@ -6,6 +6,8 @@
 
 body {
     font-family: Menlo, Consolas, monospace;
+    line-height: 1.5;
+    font-size: 16px;
     margin: 0;
     background: #111;
     color: #f9f9f9;
@@ -74,9 +76,38 @@ body {
     height: calc(100vh - 2 * var(--pad-around));
     width: auto;
 }
+
 .current-image.is-landscape img {
     width: 100%;
     height: auto;
+}
+
+.current-image {
+    position: relative;
+}
+
+.current-image-meta {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.2rem;
+    pointer-events: none;
+    user-select: none;
+    position: absolute;
+    z-index: 1;
+    bottom: 0;
+    left: 0;
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.current-image-meta p {
+    margin: 0;
+}
+
+.current-image-meta p + p {
+    margin-top: 1em;
+}
+
+.current-image:hover .current-image-meta {
+    display: none;
 }
 
 .controls {
@@ -164,7 +195,7 @@ body {
     align-items: center;
     justify-content: center;
     backdrop-filter: blur(5px);
-    z-index: 1;
+    z-index: 10;
     user-select: none;
     pointer-events: none;
 }
