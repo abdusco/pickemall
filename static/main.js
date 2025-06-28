@@ -42,13 +42,13 @@ const cropperApp = () => ({
 
         // NOTE: modifiers should be sorted alphabetically.
         const hotkeyMap = {
-            'Alt+KeyF': () => this.onEnterFullScreen(),
-            'Alt+KeyC': () => this.onCropImage(),
-            'Alt+KeyP': () => this.onPickImage(),
-            'Alt+KeyO': () => this.onToggleOverlay(),
-            'Alt+KeyJ': () => this.onNextImage(),
-            'Alt+KeyK': () => this.onPreviousImage(),
-            'Alt+KeyZ': () => this.onUndoLastOperation(),
+            'KeyF': () => this.onEnterFullScreen(),
+            'KeyC': () => this.onCropImage(),
+            'KeyP': () => this.onPickImage(),
+            'KeyO': () => this.onToggleOverlay(),
+            'KeyJ': () => this.onNextImage(),
+            'KeyK': () => this.onPreviousImage(),
+            'Control+KeyZ': () => this.onUndoLastOperation(),
 
             'Control+Enter': () => this.onSave(),
             'Alt+Enter': () => this.onSave(),
