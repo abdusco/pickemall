@@ -96,6 +96,7 @@ const cropperApp = () => ({
             this.isFullScreen = true;
         }
     },
+    /** @param {ImageFile} img */
     async onThumbnailClicked(img) {
         this.$refs.img.onload = () => this.initCropper();
         this.currentImage = img;
@@ -180,8 +181,13 @@ const cropperApp = () => ({
             ...this.operations,
         ];
     },
+    /** @param {string} title - The title to set. */
+    setTitle(title) {
+        document.title = title;
+    },
     async init() {
         const res = await fetchJSON('/api/ls');
+        this.setTitle(res.name);
         this.images = res.files.map(f => new ImageFile(f));
 
         this.currentImage = this.images[0];
@@ -193,6 +199,10 @@ const cropperApp = () => ({
         // Add beforeunload event listener to handle tab closing
         window.addEventListener('beforeunload', this.handleBeforeUnload);
     },
+    /**
+     * Sets the aspect ratio for the cropper.
+     * @param {number} ratio - The aspect ratio to set (e.g., 16/9, 4/3).
+     */
     setAspectRatio(ratio) {
         this.lastAspectRatio = ratio;
         if (this.cropper) {

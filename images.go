@@ -28,7 +28,12 @@ type FileInfo struct {
 	Image      ImageInfo `json:"image"`
 }
 
-func walkImages(rootPath string) ([]FileInfo, error) {
+type Directory struct {
+	Name  string     `json:"name"`
+	Files []FileInfo `json:"files"`
+}
+
+func walkImages(rootPath string) (Directory, error) {
 	extensions := []string{".jpg", ".jpeg"}
 	var files []FileInfo
 
@@ -62,7 +67,7 @@ func walkImages(rootPath string) ([]FileInfo, error) {
 		}
 		return nil
 	}); err != nil {
-		return nil, err
+		return Directory{}, err
 	}
 
 	for i := range files {
@@ -77,7 +82,10 @@ func walkImages(rootPath string) ([]FileInfo, error) {
 		}
 	}
 
-	return files, nil
+	return Directory{
+		Name:  filepath.Base(rootPath),
+		Files: files,
+	}, nil
 }
 
 func readJPEGDimensions(filePath string) (width, height int, err error) {

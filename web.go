@@ -95,19 +95,21 @@ func (a *WebApp) Run(ctx context.Context) error {
 	})
 
 	webapp.Get("/api/ls", func(c *fiber.Ctx) error {
-		dirContent, err := walkImages(a.config.RootDir)
+		dir, err := walkImages(a.config.RootDir)
 		if err != nil {
 			return fmt.Errorf("failed to walk dir: %w", err)
 		}
 
-		for i := range dirContent {
-			dirContent[i].URL = "/api/view?file=" + url.QueryEscape(dirContent[i].Name)
+		for i := range dir.Files {
+			dir.Files[i].URL = "/api/view?file=" + url.QueryEscape(dir.Files[i].Name)
 		}
 
 		var response struct {
+			Name  string     `json:"name"`
 			Files []FileInfo `json:"files"`
 		}
-		response.Files = dirContent
+		response.Name = dir.Name
+		response.Files = dir.Files
 
 		return c.JSON(response)
 	})
