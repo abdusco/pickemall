@@ -9,8 +9,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/rs/zerolog/log"
+	"github.com/sourcegraph/conc/pool"
 )
 
 type Operations = []Operation
@@ -98,18 +100,30 @@ func (r OperationExecutor) Exec(ctx context.Context, ops []Operation) error {
 		return nil
 	}
 
+	pooler := pool.New().WithErrors().WithContext(ctx).WithMaxGoroutines(runtime.NumCPU())
+
 	if err := os.MkdirAll(r.OutputDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory %s: %w", r.OutputDir, err)
 	}
 	for _, op := range ops {
-		if err := r.executeOperation(ctx, op); err != nil {
-			log.Ctx(ctx).Error().Err(err).
-				Interface("op", op).
-				Msg("failed to execute operation")
-			continue
-		}
+		pooler.Go(func(ctx context.Context) error {
+			if err := r.executeOperation(ctx, op); err != nil {
+				log.Ctx(ctx).Error().Err(err).
+					Interface("op", op).
+					Msg("failed to execute operation")
+				return err
+			}
+			return nil
+		})
 	}
-	log.Ctx(ctx).Info().Msg("finished")
+
+	if err := pooler.Wait(); err != nil {
+		log.Ctx(ctx).Error().
+			Err(err).
+			Msg("finished with errors")
+		return err
+	}
+
 	return nil
 }
 
